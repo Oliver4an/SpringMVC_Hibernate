@@ -2,7 +2,7 @@ package Service;
 
 import Model.User;
 
-public interface Service {
+public interface UserService {
 
     // sign up
     Boolean insertUser(User User);

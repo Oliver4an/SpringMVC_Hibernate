@@ -1,85 +1,89 @@
 package DAO;
 
 import Model.User;
-import Util.HibernateUtil;
-import org.hibernate.Session;
-import org.hibernate.Transaction;
-import org.hibernate.query.Query;
+import org.springframework.stereotype.Repository;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.transaction.Transactional;
+
+@Repository
+@Transactional
 public class UserDao {
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     public boolean insertUser(User user) {
-        Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            tx = session.beginTransaction();
-            session.save(user);
-            tx.commit();
+        try {
+            entityManager.persist(user);
             return true;
         } catch (Exception e) {
-            if (tx != null)
-                tx.rollback();
             e.printStackTrace();
             return false;
         }
     }
 
     public boolean updateUser(User user) {
-        Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            tx = session.beginTransaction();
-            session.update(user);
-            tx.commit();
+        try {
+            entityManager.merge(user);
             return true;
         } catch (Exception e) {
-            if (tx != null)
-                tx.rollback();
             e.printStackTrace();
             return false;
         }
     }
 
     public boolean selectUser(String name, String pwd) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<User> query = session.createQuery("FROM User WHERE name = :name AND password = :pwd", User.class);
-            query.setParameter("name", name);
-            query.setParameter("pwd", pwd);
-            return query.uniqueResult() != null;
+        try {
+            User user = entityManager.createQuery(
+                    "FROM User WHERE name = :name AND password = :pwd", User.class)
+                    .setParameter("name", name)
+                    .setParameter("pwd", pwd)
+                    .getSingleResult();
+            return user != null;
+        } catch (Exception e) {
+            e.printStackTrace(); // << 加這行印出例外，看到錯在哪
+            return false;
         }
     }
 
     public boolean checkUserExist(String name) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<User> query = session.createQuery("FROM User WHERE name = :name", User.class);
-            query.setParameter("name", name);
-            return query.uniqueResult() != null;
+        try {
+            User user = entityManager.createQuery(
+                    "FROM User WHERE name = :name", User.class)
+                    .setParameter("name", name)
+                    .getSingleResult();
+            return user != null;
+        } catch (Exception e) {
+            return false;
         }
     }
 
     public User getUserByName(String name) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<User> query = session.createQuery("FROM User WHERE name = :name", User.class);
-            query.setParameter("name", name);
-            return query.uniqueResult();
+        try {
+            return entityManager.createQuery(
+                    "FROM User WHERE name = :name", User.class)
+                    .setParameter("name", name)
+                    .getSingleResult();
+        } catch (Exception e) {
+            return null;
         }
     }
 
     public boolean resetPassword(String email, String newPwd) {
-        Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            tx = session.beginTransaction();
-            Query<User> query = session.createQuery("FROM User WHERE email = :email", User.class);
-            query.setParameter("email", email);
-            User user = query.uniqueResult();
+        try {
+            User user = entityManager.createQuery(
+                    "FROM User WHERE email = :email", User.class)
+                    .setParameter("email", email)
+                    .getSingleResult();
             if (user != null) {
                 user.setPassword(newPwd);
-                session.update(user);
-                tx.commit();
+                entityManager.merge(user);
                 return true;
             }
             return false;
         } catch (Exception e) {
-            if (tx != null)
-                tx.rollback();
             e.printStackTrace();
             return false;
         }

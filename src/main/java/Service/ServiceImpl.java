@@ -4,11 +4,14 @@ import DAO.UserDao;
 import Model.User;
 import Util.EmailUtil;
 import Util.MD5Util;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-public class ServiceImpl implements Service {
+@Service
+public class ServiceImpl implements UserService {
 
-    UserDao dao = new UserDao();
-    // signup
+    @Autowired
+    private UserDao dao;
 
     @Override
     public Boolean selectUser(String name, String pwd) {
@@ -24,19 +27,14 @@ public class ServiceImpl implements Service {
     @Override
     public String register(String email) {
         String code = String.format("%06d", (int) (Math.random() * 1000000));
-
-        EmailUtil emailUtil = new EmailUtil();
-        emailUtil.sendVerificationCode(email, code);
-
+        new EmailUtil().sendVerificationCode(email, code);
         return code;
     }
-
-    // logIn
 
     @Override
     public Boolean updateUser(User user) {
         return dao.updateUser(user);
-    };
+    }
 
     @Override
     public Boolean deleteUser(String sno) {
@@ -53,12 +51,10 @@ public class ServiceImpl implements Service {
         return dao.getUserByName(name);
     }
 
-    // forget password
+    @Override
     public void reSetPwd(String mail) {
         String newPwd = String.format("%06d", (int) (Math.random() * 1000000));
-
-        EmailUtil emailUtil = new EmailUtil();
-        emailUtil.sendResetPwd(mail, newPwd);
+        new EmailUtil().sendResetPwd(mail, newPwd);
         System.out.println(dao.resetPassword(mail, MD5Util.toMD5(newPwd)));
     }
 }
